@@ -9,13 +9,15 @@ import platform.posix.access
 import platform.posix.fclose
 import platform.posix.fgets
 import platform.posix.fopen
+import platform.posix.fputs
 
-interface IO {
+interface Posix {
   fun readFileContents(filename: String, bufferLength: Int = 64 * 1024): String?
   fun canAccessPath(filename: String): Boolean
+  fun writeFileContents(filename: String, content: String)
 }
 
-class IOImpl : IO {
+class PosixImpl : Posix {
   override fun readFileContents(filename: String, bufferLength: Int): String? {
     val file = fopen(filename, "r")
       ?: throw IllegalStateException("Can't open file $filename")
@@ -24,6 +26,16 @@ class IOImpl : IO {
         val buffer = allocArray<ByteVar>(bufferLength)
         return fgets(buffer, bufferLength, file)?.toKString()
       }
+    } finally {
+      fclose(file)
+    }
+  }
+
+  override fun writeFileContents(filename: String, content: String) {
+    val file = fopen(filename, "w")
+      ?: throw IllegalStateException("Can't open file $filename")
+    try {
+      fputs(content, file)
     } finally {
       fclose(file)
     }
