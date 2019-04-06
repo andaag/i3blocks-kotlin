@@ -1,13 +1,13 @@
 package com.neuron.i3blocks.backlight
 
 import com.neuron.i3blocks.BLOCKBUTTON
+import com.neuron.i3blocks.FailedToWriteToFileException
 import com.neuron.i3blocks.I3BlocksImpl
 import com.neuron.i3blocks.Posix
 import com.neuron.i3blocks.PosixImpl
 import kotlin.math.roundToInt
 
 private const val BASE_PATH = "/home/neuron/intel_backlight_sample"
-
 
 class BrightnessApp(private val io: Posix) {
   private val maxBrightness = readBrightnessState("max_brightness").toDouble()
@@ -34,7 +34,16 @@ class BrightnessApp(private val io: Posix) {
       brightness <= 0 -> 0
       else -> brightness.toInt()
     }
-    io.writeFileContents("$BASE_PATH/brightness", "$newBrightness")
+    try {
+      io.writeFileContents("$BASE_PATH/brightness", "$newBrightness")
+    } catch (e: FailedToWriteToFileException) {
+      println("Failed to write to $BASE_PATH/brightness. This can be due to permissions.\n" +
+          "Please execute:\n" +
+          "#usermod -a -G video YOUR_USER\n" +
+          "And create /etc/udev/rules.d/backlight.rules\n" +
+          "#ACTION==\"add\", SUBSYSTEM==\"backlight\", KERNEL==\"acpi_video0\", RUN+=\"/bin/chgrp video /sys/class/backlight/%k/brightness\"\n" +
+          "#ACTION==\"add\", SUBSYSTEM==\"backlight\", KERNEL==\"acpi_video0\", RUN+=\"/bin/chmod g+w /sys/class/backlight/%k/brightness\"\n")
+    }
   }
 
   fun getCurrentBrightness(): Int {

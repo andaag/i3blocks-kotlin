@@ -20,7 +20,7 @@ interface Posix {
 class PosixImpl : Posix {
   override fun readFileContents(filename: String, bufferLength: Int): String? {
     val file = fopen(filename, "r")
-      ?: throw IllegalStateException("Can't open file $filename")
+      ?: throw FailedToReadFileException(filename)
     try {
       memScoped {
         val buffer = allocArray<ByteVar>(bufferLength)
@@ -33,7 +33,7 @@ class PosixImpl : Posix {
 
   override fun writeFileContents(filename: String, content: String) {
     val file = fopen(filename, "w")
-      ?: throw IllegalStateException("Can't open file $filename")
+      ?: throw FailedToWriteToFileException(filename)
     try {
       fputs(content, file)
     } finally {
@@ -46,3 +46,5 @@ class PosixImpl : Posix {
   }
 }
 
+class FailedToReadFileException(filename:String):IllegalStateException("Can't open file $filename for reading")
+class FailedToWriteToFileException(filename:String):IllegalStateException("Can't open file $filename for writing")
