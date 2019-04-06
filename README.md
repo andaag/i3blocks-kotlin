@@ -1,5 +1,5 @@
 # i3 kotlin code
-Native kotlin code for i3blocks functionality.
+My kotlin native code for i3blocks functionality.
 
 
 ## To build
