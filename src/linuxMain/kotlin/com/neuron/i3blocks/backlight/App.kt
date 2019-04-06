@@ -3,11 +3,14 @@ package com.neuron.i3blocks.backlight
 import com.neuron.i3blocks.BLOCKBUTTON
 import com.neuron.i3blocks.FailedToWriteToFileException
 import com.neuron.i3blocks.I3BlocksImpl
+import com.neuron.i3blocks.Logger
 import com.neuron.i3blocks.Posix
 import com.neuron.i3blocks.PosixImpl
+import platform.posix.exit
 import kotlin.math.roundToInt
 
-private const val BASE_PATH = "/home/neuron/intel_backlight_sample"
+private val logger = Logger()
+private const val BASE_PATH = "/sys/class/backlight/intel_backlight"
 
 class BrightnessApp(private val io: Posix) {
   private val maxBrightness = readBrightnessState("max_brightness").toDouble()
@@ -37,12 +40,13 @@ class BrightnessApp(private val io: Posix) {
     try {
       io.writeFileContents("$BASE_PATH/brightness", "$newBrightness")
     } catch (e: FailedToWriteToFileException) {
-      println("Failed to write to $BASE_PATH/brightness. This can be due to permissions.\n" +
-          "Please execute:\n" +
-          "#usermod -a -G video YOUR_USER\n" +
-          "And create /etc/udev/rules.d/backlight.rules\n" +
-          "#ACTION==\"add\", SUBSYSTEM==\"backlight\", KERNEL==\"acpi_video0\", RUN+=\"/bin/chgrp video /sys/class/backlight/%k/brightness\"\n" +
-          "#ACTION==\"add\", SUBSYSTEM==\"backlight\", KERNEL==\"acpi_video0\", RUN+=\"/bin/chmod g+w /sys/class/backlight/%k/brightness\"\n")
+      println(
+          "Failed to write to $BASE_PATH/brightness. This can be due to permissions.\n" +
+              "Please fix:\n" +
+              "#usermod -a -G video YOUR_USER\n" +
+              "And perform the following on startup\n" +
+              "# chgrp video /sys/class/backlight/intel_backlight/brightness && chmod g+w /sys/class/backlight/intel_backlight/brightness"
+      )
     }
   }
 
@@ -52,11 +56,22 @@ class BrightnessApp(private val io: Posix) {
 }
 
 fun main() {
+  //@todo : support replacing XF86KbdBrightnessDown and XF86KbdBrightnessUp
+  //@todo : check permissions on start instead of trying to write first.
+
   val i3Blocks = I3BlocksImpl()
   val io = PosixImpl()
+
+  logger.debug("Trying to access $BASE_PATH")
+  if (!io.canAccessPath(BASE_PATH)) {
+    logger.debug("Can't find brightness file, exiting without info.")
+    exit(0)
+  }
+
   val app = BrightnessApp(io)
 
   val blockButton = i3Blocks.getBlockButton()
+  logger.debug("Block button $blockButton")
   when (blockButton) {
     BLOCKBUTTON.SCROLL_UP -> {
       app.increaseBrightness()
@@ -69,11 +84,7 @@ fun main() {
     }
   }
 
-  if (io.canAccessPath(BASE_PATH)) {
-    val brightnessPercentage = app.getCurrentBrightness()
-    println("$brightnessPercentage%")
-  } else {
-    println("")
-  }
+  val brightnessPercentage = app.getCurrentBrightness()
+  println("$brightnessPercentage%")
 }
 

@@ -41,9 +41,7 @@ class PosixImpl : Posix {
     }
   }
 
-  override fun canAccessPath(filename: String): Boolean {
-    return access(filename, F_OK) != -1
-  }
+  override fun canAccessPath(filename: String): Boolean = access(filename, F_OK) != -1
 }
 
 class FailedToReadFileException(filename:String):IllegalStateException("Can't open file $filename for reading")
