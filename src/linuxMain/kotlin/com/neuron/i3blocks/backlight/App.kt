@@ -40,13 +40,7 @@ class BrightnessApp(private val io: Posix) {
     try {
       io.writeFileContents("$BASE_PATH/brightness", "$newBrightness")
     } catch (e: FailedToWriteToFileException) {
-      println(
-          "Failed to write to $BASE_PATH/brightness. This can be due to permissions.\n" +
-              "Please fix:\n" +
-              "#usermod -a -G video YOUR_USER\n" +
-              "And perform the following on startup\n" +
-              "# chgrp video /sys/class/backlight/intel_backlight/brightness && chmod g+w /sys/class/backlight/intel_backlight/brightness"
-      )
+      printCantWriteError()
     }
   }
 
@@ -55,15 +49,27 @@ class BrightnessApp(private val io: Posix) {
   }
 }
 
-fun main(args: Array<String>) {
-  //@todo : check permissions on start instead of trying to write first.
+private fun printCantWriteError() {
+  println(
+      "Failed to write to $BASE_PATH/brightness. This can be due to permissions.\n" +
+          "Please fix:\n" +
+          "#usermod -a -G video YOUR_USER\n" +
+          "And perform the following on startup\n" +
+          "# chgrp video /sys/class/backlight/intel_backlight/brightness && chmod g+w /sys/class/backlight/intel_backlight/brightness"
+  )
+}
 
+fun main(args: Array<String>) {
   val i3Blocks = I3BlocksImpl()
   val io = PosixImpl()
 
   logger.debug("Trying to access $BASE_PATH")
-  if (!io.canAccessPath(BASE_PATH)) {
+  if (!io.exist(BASE_PATH)) {
     logger.debug("Can't find brightness file, exiting without info.")
+    exit(0)
+  }
+  if (!io.canWrite("$BASE_PATH/brightness")) {
+    printCantWriteError()
     exit(0)
   }
 

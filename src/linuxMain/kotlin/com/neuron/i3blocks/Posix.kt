@@ -5,6 +5,8 @@ import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.toKString
 import platform.posix.F_OK
+import platform.posix.R_OK
+import platform.posix.W_OK
 import platform.posix.access
 import platform.posix.fclose
 import platform.posix.fgets
@@ -15,6 +17,9 @@ interface Posix {
   fun readFileContents(filename: String, bufferLength: Int = 64 * 1024): String?
   fun canAccessPath(filename: String): Boolean
   fun writeFileContents(filename: String, content: String)
+  fun exist(filename: String) = access(filename, F_OK) != -1
+  fun canWrite(filename: String) = access(filename, W_OK) != -1
+  fun canRead(filename: String) = access(filename, R_OK) != -1
 }
 
 class PosixImpl : Posix {
@@ -44,5 +49,5 @@ class PosixImpl : Posix {
   override fun canAccessPath(filename: String): Boolean = access(filename, F_OK) != -1
 }
 
-class FailedToReadFileException(filename:String):IllegalStateException("Can't open file $filename for reading")
-class FailedToWriteToFileException(filename:String):IllegalStateException("Can't open file $filename for writing")
+class FailedToReadFileException(filename: String) : IllegalStateException("Can't open file $filename for reading")
+class FailedToWriteToFileException(filename: String) : IllegalStateException("Can't open file $filename for writing")

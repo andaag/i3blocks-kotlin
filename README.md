@@ -43,3 +43,7 @@ interval=10
 - Font awesome copy&pastable icons : https://fontawesome.com/cheatsheet?from=io
 - https://fontdrop.info/
 - Insert unicode extension for vscode
+
+
+## TODO:
+- Network, /sys/class/net/X, wifi/vpn/eth, speed
