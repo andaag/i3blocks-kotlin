@@ -3,15 +3,20 @@ package com.neuron.i3blocks
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.pointed
 import kotlinx.cinterop.toKString
 import platform.posix.F_OK
 import platform.posix.R_OK
 import platform.posix.W_OK
 import platform.posix.access
+import platform.posix.closedir
 import platform.posix.fclose
 import platform.posix.fgets
 import platform.posix.fopen
 import platform.posix.fputs
+import platform.posix.lstat
+import platform.posix.opendir
+import platform.posix.readdir
 
 interface Posix {
   fun readFileContents(filename: String, bufferLength: Int = 64 * 1024): String?
@@ -43,6 +48,20 @@ class PosixImpl : Posix {
       fputs(content, file)
     } finally {
       fclose(file)
+    }
+  }
+
+  fun listDirectory(path: String): Sequence<String> = sequence {
+    val dir = opendir(path)
+    try {
+      var next = readdir(dir)
+      while (next != null) {
+        // should call lstat on these
+        yield(next.pointed.d_name.toKString())
+        next = readdir(dir)
+      }
+    } finally {
+      closedir(dir)
     }
   }
 
