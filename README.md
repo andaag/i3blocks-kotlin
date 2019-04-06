@@ -20,6 +20,26 @@ bar {
 ```
 build/bin/linux/backlightReleaseExecutable/backlight.kexe
 
-# Scroll up:
-BLOCK_BUTTON=4 build/bin/linux/backlightReleaseExecutable/backlight.kexe
+# Increase brightness:
+build/bin/linux/backlightReleaseExecutable/backlight.kexe up
 ```
+
+## Using backlight.kexe:
+```
+# In config:
+bindsym XF86KbdBrightnessDown exec "backlight.kexe"
+bindsym XF86KbdBrightnessUp exec "backlight.kexe"
+
+# In i3blocks.conf:
+[backlight]
+label=⛯
+command=backlight.kexe
+signal=1
+interval=10
+
+```
+
+## Notes for self:
+- Font awesome copy&pastable icons : https://fontawesome.com/cheatsheet?from=io
+- https://fontdrop.info/
+- Insert unicode extension for vscode

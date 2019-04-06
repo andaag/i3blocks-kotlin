@@ -55,8 +55,7 @@ class BrightnessApp(private val io: Posix) {
   }
 }
 
-fun main() {
-  //@todo : support replacing XF86KbdBrightnessDown and XF86KbdBrightnessUp
+fun main(args: Array<String>) {
   //@todo : check permissions on start instead of trying to write first.
 
   val i3Blocks = I3BlocksImpl()
@@ -73,12 +72,18 @@ fun main() {
   val blockButton = i3Blocks.getBlockButton()
   logger.debug("Block button $blockButton")
   when (blockButton) {
-    BLOCKBUTTON.SCROLL_UP -> {
-      app.increaseBrightness()
+    BLOCKBUTTON.SCROLL_UP -> app.increaseBrightness()
+    BLOCKBUTTON.SCROLL_DOWN -> app.decreaseBrightness()
+    else -> {
+      //no-op
     }
-    BLOCKBUTTON.SCROLL_DOWN -> {
-      app.decreaseBrightness()
-    }
+  }
+
+  val arg = args.firstOrNull()?.trim()
+  logger.debug("Argument is $arg")
+  when (arg) {
+    "up" -> app.increaseBrightness()
+    "down" -> app.decreaseBrightness()
     else -> {
       //no-op
     }
