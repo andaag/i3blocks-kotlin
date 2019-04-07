@@ -12,29 +12,13 @@ const val MIN_RXTX = 100 * 1024L
 const val SLEEP_INTERVAL = 5
 
 class NetworkApp(private val io: Posix, private val i3Blocks: I3Blocks) {
-  fun parseRouteInfo(): Sequence<RouteInfo> {
-    val routeInfo = io.execute("route -n")
-
-    return sequence {
-      routeInfo.split("\n").forEachIndexed { i, line ->
-        if (i >= 2) {
-          val split = line.split(" ")
-              .map { it.trim() }
-              .filter { it.isNotEmpty() }
-          yield(RouteInfo(split[7], split[3], split[0]))
-        }
-      }
-    }
-  }
 
   fun prettyPrint(): String {
     val initialDevices = parseDevices().toList()
     sleep(SLEEP_INTERVAL.toUInt())
     val afterSleep = parseDevices().toList().groupBy { it.deviceName }
 
-
-    return initialDevices.joinToString(separator = " ")
-    { dev ->
+    val deviceInfo = initialDevices.joinToString { dev ->
       buildString {
         val rxBytes = ((afterSleep[dev.deviceName]?.let {
           it[0].recieveBytes
@@ -54,6 +38,27 @@ class NetworkApp(private val io: Posix, private val i3Blocks: I3Blocks) {
           }
         } else {
           append(i3Blocks.spanColor(dev.deviceName, "red"))
+        }
+      }
+    }
+
+    return if (deviceInfo.isEmpty()) {
+      i3Blocks.spanColor("none", "red")
+    } else {
+      deviceInfo
+    }
+  }
+
+  fun parseRouteInfo(): Sequence<RouteInfo> {
+    val routeInfo = io.execute("route -n")
+
+    return sequence {
+      routeInfo.split("\n").forEachIndexed { i, line ->
+        if (i >= 2) {
+          val split = line.split(" ")
+              .map { it.trim() }
+              .filter { it.isNotEmpty() }
+          yield(RouteInfo(split[7], split[3], split[0]))
         }
       }
     }

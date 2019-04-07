@@ -3,6 +3,7 @@ package com.neuron.i3blocks
 import com.neuron.i3blocks.network.NetworkApp
 import com.neuron.i3blocks.network.NetworkDevice
 import com.neuron.i3blocks.network.RouteInfo
+import kotlin.native.concurrent.AtomicInt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -16,6 +17,14 @@ wlp2s0: 0000   69.  -41.  -256        0      0      0      0     81        0
     val DEV_DEVICE = """Inter-|   Receive                                                |  Transmit
  face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
   eth0: 77847385431 58023914    0  180    0     0          0    206616 27584643387 32338348    0    0    0     0       0          0
+    lo:  504177    1861    0    0    0     0          0         0   504177    1861    0    0    0     0       0          0
+docker0:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+wlp2s0:  899735    1826    0    0    0     0          0         0   528852    1622    0    0    0     0       0          0
+  """.trimIndent()
+
+    val DEV_DEVICE_READ2 = """Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+  eth0: 78047385431 58023914    0  180    0     0          0    206616 27584643387 32338348    0    0    0     0       0          0
     lo:  504177    1861    0    0    0     0          0         0   504177    1861    0    0    0     0       0          0
 docker0:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
 wlp2s0:  899735    1826    0    0    0     0          0         0   528852    1622    0    0    0     0       0          0
@@ -43,6 +52,30 @@ wlp2s0:  899735    1826    0    0    0     0          0         0   528852    16
         devices
     )
   }
+
+  @Test
+  fun `prettyprint format`() {
+    val readNum = AtomicInt(0)
+    val io = IOTest(
+        readFile = {
+          readNum.increment()
+          if (readNum.value == 1) {
+            DEV_DEVICE
+          } else {
+            DEV_DEVICE_READ2
+          }
+        })
+    val app = NetworkApp(io, I3BlocksImpl())
+    val output = app.prettyPrint()
+
+    assertEquals(
+        "<span color='green'>eth0</span> rx 39062 kB/s, <span color='green'>wlp2s0</span>",
+        output
+    )
+  }
+
+  // todo : Wanted prettyprint output
+  // Connections :
 
   @Test
   fun `parse route`() {
