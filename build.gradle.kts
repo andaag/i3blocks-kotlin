@@ -11,6 +11,9 @@ kotlin {
             executable("backlight") {
                 entryPoint = "com.neuron.i3blocks.backlight.main"
             }
+            executable("network") {
+                entryPoint = "com.neuron.i3blocks.network.main"
+            }
         }
     }
 }

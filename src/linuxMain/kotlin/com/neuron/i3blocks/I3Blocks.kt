@@ -5,6 +5,7 @@ import platform.posix.getenv
 
 interface I3Blocks {
   fun getBlockButton(): BLOCKBUTTON
+  fun spanColor(c:String, color:String) = "<span color='$color'>$c</span>"
 }
 
 class I3BlocksImpl : I3Blocks {

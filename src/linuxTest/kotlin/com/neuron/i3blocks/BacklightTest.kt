@@ -7,13 +7,13 @@ import kotlin.test.assertEquals
 class BacklightTest {
   @Test
   fun `test normal update`() {
-    val io = IOTest { filename ->
+    val io = IOTest(readFile = { filename ->
       if (filename.endsWith("max_brightness")) {
         "7500"
       } else {
         "2500"
       }
-    }
+    })
     val app = BrightnessApp(io)
     app.increaseBrightness()
     assertEquals("2875", io.writes[0].second)
@@ -21,13 +21,13 @@ class BacklightTest {
 
   @Test
   fun `test update above max`() {
-    val io = IOTest { filename ->
+    val io = IOTest(readFile = { filename ->
       if (filename.endsWith("max_brightness")) {
         "7500"
       } else {
         "7499"
       }
-    }
+    })
     val app = BrightnessApp(io)
     app.increaseBrightness()
     assertEquals("7500", io.writes[0].second)

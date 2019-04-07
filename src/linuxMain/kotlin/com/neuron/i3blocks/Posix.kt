@@ -16,25 +16,58 @@ import platform.posix.fopen
 import platform.posix.fputs
 import platform.posix.lstat
 import platform.posix.opendir
+import platform.posix.pclose
+import platform.posix.popen
 import platform.posix.readdir
 
 interface Posix {
   fun readFileContents(filename: String, bufferLength: Int = 64 * 1024): String?
   fun canAccessPath(filename: String): Boolean
   fun writeFileContents(filename: String, content: String)
+  fun listDirectory(path: String): Sequence<String>
+  fun execute(cmd:String, bufferLength: Int = 512 * 1024):String
+
   fun exist(filename: String) = access(filename, F_OK) != -1
   fun canWrite(filename: String) = access(filename, W_OK) != -1
   fun canRead(filename: String) = access(filename, R_OK) != -1
 }
 
 class PosixImpl : Posix {
+  override fun execute(cmd: String, bufferLength: Int): String {
+    val file = popen(cmd, "r")
+    return try {
+      memScoped {
+        val buffer = allocArray<ByteVar>(bufferLength)
+        buildString {
+          var line = fgets(buffer, bufferLength, file)?.toKString()
+          while (line != null) {
+            append(line)
+            line = fgets(buffer, bufferLength, file)?.toKString()
+          }
+        }
+      }
+    } finally {
+      val exitStatus = pclose(file)
+      if (exitStatus != 0) {
+        throw CommandExitedWithErrorCode(cmd, exitStatus)
+      }
+    }
+  }
+
   override fun readFileContents(filename: String, bufferLength: Int): String? {
     val file = fopen(filename, "r")
       ?: throw FailedToReadFileException(filename)
-    try {
+    return try {
       memScoped {
         val buffer = allocArray<ByteVar>(bufferLength)
-        return fgets(buffer, bufferLength, file)?.toKString()
+        buildString {
+          var line = fgets(buffer, bufferLength, file)?.toKString()
+          while (line != null) {
+            append(line)
+            line = fgets(buffer, bufferLength, file)?.toKString()
+          }
+        }
+
       }
     } finally {
       fclose(file)
@@ -51,13 +84,16 @@ class PosixImpl : Posix {
     }
   }
 
-  fun listDirectory(path: String): Sequence<String> = sequence {
+  override fun listDirectory(path: String): Sequence<String> = sequence {
     val dir = opendir(path)
     try {
       var next = readdir(dir)
       while (next != null) {
         // should call lstat on these
-        yield(next.pointed.d_name.toKString())
+        val name = next.pointed.d_name.toKString()
+        if (name != "." && name != "..") {
+          yield(name)
+        }
         next = readdir(dir)
       }
     } finally {
@@ -70,3 +106,4 @@ class PosixImpl : Posix {
 
 class FailedToReadFileException(filename: String) : IllegalStateException("Can't open file $filename for reading")
 class FailedToWriteToFileException(filename: String) : IllegalStateException("Can't open file $filename for writing")
+class CommandExitedWithErrorCode(command:String, errorCode:Int) : IllegalStateException("Command '$command' exited with $errorCode")
