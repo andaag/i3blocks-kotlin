@@ -50,12 +50,12 @@ class BrightnessApp(private val io: Posix) {
 }
 
 private fun printCantWriteError() {
-  println(
-      "Failed to write to $BASE_PATH/brightness. This can be due to permissions.\n" +
-          "Please fix:\n" +
-          "#usermod -a -G video YOUR_USER\n" +
-          "And perform the following on startup\n" +
-          "# chgrp video /sys/class/backlight/intel_backlight/brightness && chmod g+w /sys/class/backlight/intel_backlight/brightness"
+  println("""
+# Failed to write to $BASE_PATH/brightness. This can be due to permissions.
+# Add this to /etc/udev/rules.d/backlight.rules
+ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness"
+ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"
+  """.trimIndent()
   )
 }
 
